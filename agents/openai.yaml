@@ -1,0 +1,5 @@
+interface:
+  display_name: "Structured Root-Cause Research"
+  short_description: "Evidence-based root-cause analysis"
+  default_prompt: "Use $structured-root-cause-research to analyze this problem, identify the root cause, compare evidence, and propose a verifiable plan."
+
