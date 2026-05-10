@@ -1,0 +1,49 @@
+name: Validate skill
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Validate SKILL.md
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          text = Path("SKILL.md").read_text(encoding="utf-8")
+          if not text.startswith("---\n"):
+              raise SystemExit("SKILL.md must start with YAML frontmatter")
+          try:
+              _, frontmatter, body = text.split("---\n", 2)
+          except ValueError as exc:
+              raise SystemExit("SKILL.md frontmatter is not closed") from exc
+
+          fields = {}
+          for line in frontmatter.splitlines():
+              if ":" in line:
+                  key, value = line.split(":", 1)
+                  fields[key.strip()] = value.strip()
+
+          name = fields.get("name")
+          description = fields.get("description")
+          if not name:
+              raise SystemExit("Missing name in frontmatter")
+          if not re.fullmatch(r"[a-z0-9-]{1,64}", name):
+              raise SystemExit(f"Invalid skill name: {name}")
+          if not description or len(description) < 80:
+              raise SystemExit("Description should clearly explain when to use the skill")
+          if "chain-of-thought" in body.lower() and "do not expose" not in body.lower():
+              raise SystemExit("Skill must not request exposed private chain-of-thought")
+          print("SKILL.md looks valid")
+          PY
+
