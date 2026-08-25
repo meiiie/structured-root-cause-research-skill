@@ -14,13 +14,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.x"
-      - name: Validate SKILL.md
+      - name: Validate SKILL.md and eval structure
         run: |
           python - <<'PY'
           from pathlib import Path
           import re
 
-          text = Path("SKILL.md").read_text(encoding="utf-8")
+          skill = Path("SKILL.md")
+          text = skill.read_text(encoding="utf-8")
           if not text.startswith("---\n"):
               raise SystemExit("SKILL.md must start with YAML frontmatter")
           try:
@@ -44,6 +45,30 @@ jobs:
               raise SystemExit("Description should clearly explain when to use the skill")
           if "chain-of-thought" in body.lower() and "do not expose" not in body.lower():
               raise SystemExit("Skill must not request exposed private chain-of-thought")
-          print("SKILL.md looks valid")
-          PY
 
+          required_concepts = [
+              "competing hypotheses",
+              "causal boundary",
+              "falsifier",
+              "proximate cause",
+              "verification plan",
+              "do not over-research",
+          ]
+          body_lower = body.lower()
+          missing = [concept for concept in required_concepts if concept not in body_lower]
+          if missing:
+              raise SystemExit(f"Missing required causal-investigation concepts: {missing}")
+
+          required_evals = [
+              "evals/README.md",
+              "evals/misleading-first-hypothesis.md",
+              "evals/multi-cause-incident.md",
+              "evals/security-false-positive.md",
+              "evals/trivial-bug.md",
+          ]
+          missing_evals = [path for path in required_evals if not Path(path).is_file()]
+          if missing_evals:
+              raise SystemExit(f"Missing behavioral eval files: {missing_evals}")
+
+          print("SKILL.md and behavioral eval structure look valid")
+          PY
